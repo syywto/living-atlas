@@ -1,0 +1,42 @@
+name: Publish Living Atlas
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - website-source.zip
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout public release
+        uses: actions/checkout@v6
+      - name: Extract reviewed website
+        run: |
+          unzip -q website-source.zip -d _release
+          test -f _release/docs/index.html
+          test -f _release/docs/data.json
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload static website only
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _release/docs
+      - name: Deploy website
+        id: deployment
+        uses: actions/deploy-pages@v4
